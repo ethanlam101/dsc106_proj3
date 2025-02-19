@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cancer Diagnoses Story</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f8f8f8;
+            max-width: 960px;
+            margin: auto;
+        }
+        .dot {
+            stroke: white;
+            stroke-width: 0.5px;
+            transition: all 0.5s ease-in-out;
+        }
+        .dot:hover {
+            stroke: black;
+            stroke-width: 1px;
+        }
+        .tooltip {
+            position: absolute;
+            background: white;
+            border: 1px solid black;
+            padding: 5px;
+            display: none;
+            font-size: 14px;
+            pointer-events: none;
+        }
+        .nav-bar {
+            margin-bottom: 10px;
+        }
+        .nav-button {
+            padding: 8px 16px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            background-color: #ddd;
+            transition: 0.3s;
+        }
+        .nav-button.active {
+            background-color: steelblue;
+            color: white;
+        }
+        #story-text {
+            font-size: 18px;
+            margin: 10px auto;
+            max-width: 80%;
+            text-align: center;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <h2>Cancer Diagnoses Story</h2>
+    <div class="nav-bar">
+        <button class="nav-button active" onclick="updateStep(1)">1️⃣ Show All</button>
+        <button class="nav-button" onclick="updateStep(2)">2️⃣ Focus on Breast Cancer</button>
+        <button class="nav-button" onclick="updateStep(3)">3️⃣ Highlight Less-Publicized Cancers</button>
+        <button class="nav-button" onclick="updateStep(4)">4️⃣ Compare All</button>
+    </div>
+
+    <p id="story-text">This visualization shows all cancer diagnoses. Each dot represents one diagnosis.</p>
+
+    <svg></svg>
+    <div class="tooltip"></div>
+
+    <script>
+        // Set SVG dimensions
+        const width = 900, height = 500, margin = {top: 20, right: 50, bottom: 50, left: 50};
+        const dotSize = 10, spacing = 3;
+        const maxDotsPerRow = Math.floor((width - margin.left - margin.right) / (dotSize + spacing));
+
+        const svg = d3.select("svg").attr("width", width).attr("height", height);
+        const tooltip = d3.select(".tooltip");
+        const storyText = d3.select("#story-text");
+
+        let expandedData = [], colorScale, cancerTypes;
+
+        // Load data
+        d3.csv("cancer_counts.csv").then(data => {
+            // Expand dataset to create individual dots
+            data.forEach(d => {
+                let count = +d.count;
+                for (let i = 0; i < count; i++) {
+                    expandedData.push({ group_dx: d.group_dx });
+                }
+            });
+
+            // Get unique cancer types
+            cancerTypes = [...new Set(expandedData.map(d => d.group_dx))];
+
+            // Assign colors
+            colorScale = d3.scaleOrdinal()
+                .domain(cancerTypes)
+                .range(d3.schemeCategory10);
+
+            // Draw dots initially
+            updateStep(1);
+        });
+
+        function updateStep(step) {
+            d3.selectAll(".nav-button").classed("active", false);
+            d3.select(".nav-bar").selectAll("button").nodes()[step - 1].classList.add("active");
+
+            // Update explanatory text
+            if (step === 1) {
+                storyText.text("This visualization shows all cancer diagnoses. Each dot represents one diagnosis.");
+            } else if (step === 2) {
+                storyText.text("Breast cancer is one of the most publicized cancers, but how does it compare in numbers?");
+            } else if (step === 3) {
+                storyText.text("Colorectal, gastric, and lung cancer have high case numbers but receive less media attention.");
+            } else if (step === 4) {
+                storyText.text("Comparing all cancers side by side gives us a clearer perspective on overall cases.");
+            }
+
+            let totalRows = Math.ceil(expandedData.length / maxDotsPerRow);
+            let rowSpacing = (height - margin.top - margin.bottom) / totalRows;
+
+            let dots = svg.selectAll(".dot").data(expandedData, d => d.group_dx);
+
+            dots.enter()
+                .append("circle")
+                .attr("class", "dot")
+                .attr("cx", (d, i) => margin.left + (i % maxDotsPerRow) * (dotSize + spacing))
+                .attr("cy", (d, i) => margin.top + Math.floor(i / maxDotsPerRow) * rowSpacing)
+                .attr("r", dotSize / 2)
+                .attr("fill", d => colorScale(d.group_dx))
+                .style("opacity", 1)
+                .on("mouseover", function(event, d) {
+                    d3.select(this).attr("r", dotSize / 1.5);
+                    tooltip.style("display", "block")
+                           .style("left", (event.pageX + 10) + "px")
+                           .style("top", (event.pageY - 20) + "px")
+                           .html(`<strong>${d.group_dx}</strong>`);
+                })
+                .on("mouseout", function() {
+                    d3.select(this).attr("r", dotSize / 2);
+                    tooltip.style("display", "none");
+                })
+                .merge(dots)
+                .transition().duration(500)
+                .attr("fill", d => {
+                    if (step === 2) return d.group_dx === "breast cancer" ? colorScale(d.group_dx) : "gray";
+                    if (step === 3) return ["colorectal cancer", "gastric cancer", "lung cancer"].includes(d.group_dx) ? colorScale(d.group_dx) : "gray";
+                    return colorScale(d.group_dx);
+                })
+                .style("opacity", step === 4 ? 0.5 : 1);
+
+            dots.exit().remove();
+        }
+    </script>
+</body>
+</html>
