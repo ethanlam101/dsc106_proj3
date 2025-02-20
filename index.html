@@ -94,14 +94,14 @@
 
             cancerTypes = [...new Set(expandedData.map(d => d.group_dx))];
 
-            colorScale = d3.scaleOrdinal()
-                .domain(cancerTypes)
-                .range(d3.schemeCategory10);
+            colorScale = d3.scaleOrdinal(d3.schemeCategory10)
+                .domain(cancerTypes);
 
             updateStep(1);
         });
 
         function updateStep(step) {
+            console.log("Cancer Types:", cancerTypes);
             d3.selectAll(".nav-button").classed("active", false);
             d3.select(".nav-bar").selectAll("button").nodes()[step - 1].classList.add("active");
 
@@ -112,7 +112,7 @@
             } else if (step === 3) {
                 storyText.text("Colorectal, gastric, and lung cancer make up 74% of diagnoses, but generally receive less media attention compared to breast cancer.");
             } else if (step === 4) {
-                storyText.text("Lung cancer and colorectal cancer are frequently discussed in research circles due to their high mortality rates, but they may not have the same funding as breast cancer research.");
+                storyText.text("Lung, colorectal, and liver cancer are frequently discussed in research circles due to their high mortality rates, but they may not have the same funding as breast cancer research.");
             } else if (step === 5) {
                 storyText.text("All types of cancer, regardless of their prevalence in the media, deserve equal focus in both research and awareness.");
             }
@@ -147,7 +147,7 @@
                     if (step === 1) return "gray";
                     if (step === 2) return d.group_dx === "breast cancer" ? colorScale(d.group_dx) : "gray";
                     if (step === 3) return ["colorectal cancer", "gastric cancer", "lung cancer"].includes(d.group_dx) ? colorScale(d.group_dx) : "gray";
-                    if (step === 4) return ["lung cancer", "colorectal cancer"].includes(d.group_dx) ? colorScale(d.group_dx) : "gray";
+                    if (step === 4) return ["lung cancer", "colorectal cancer", "liver cancer"].includes(d.group_dx) ? colorScale(d.group_dx) : "gray";
                     return colorScale(d.group_dx);
                 })
                 .style("opacity", step === 5 ? 0.5 : 1);
