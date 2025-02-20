@@ -53,25 +53,27 @@
             max-width: 80%;
             text-align: center;
             line-height: 1.5;
+            height: 60px; /* Set a fixed height */
+            overflow: hidden; /* Prevents text from spilling out */
         }
     </style>
 </head>
 <body>
     <h2>Cancer Diagnoses Story</h2>
     <div class="nav-bar">
-        <button class="nav-button active" onclick="updateStep(1)">1️⃣ Show All</button>
-        <button class="nav-button" onclick="updateStep(2)">2️⃣ Focus on Breast Cancer</button>
-        <button class="nav-button" onclick="updateStep(3)">3️⃣ Highlight Less-Publicized Cancers</button>
-        <button class="nav-button" onclick="updateStep(4)">4️⃣ Compare All</button>
+        <button class="nav-button active" onclick="updateStep(1)">1️⃣</button>
+        <button class="nav-button" onclick="updateStep(2)">2️⃣</button>
+        <button class="nav-button" onclick="updateStep(3)">3️⃣</button>
+        <button class="nav-button" onclick="updateStep(4)">4️⃣</button>
+        <button class="nav-button" onclick="updateStep(5)">5️⃣</button>
     </div>
 
-    <p id="story-text">This visualization shows all cancer diagnoses. Each dot represents one diagnosis.</p>
+    <p id="story-text">This visualization shows cancer diagnoses from a </p>
 
     <svg></svg>
     <div class="tooltip"></div>
 
     <script>
-        // Set SVG dimensions
         const width = 900, height = 500, margin = {top: 20, right: 50, bottom: 50, left: 50};
         const dotSize = 10, spacing = 3;
         const maxDotsPerRow = Math.floor((width - margin.left - margin.right) / (dotSize + spacing));
@@ -82,9 +84,7 @@
 
         let expandedData = [], colorScale, cancerTypes;
 
-        // Load data
         d3.csv("cancer_counts.csv").then(data => {
-            // Expand dataset to create individual dots
             data.forEach(d => {
                 let count = +d.count;
                 for (let i = 0; i < count; i++) {
@@ -92,15 +92,12 @@
                 }
             });
 
-            // Get unique cancer types
             cancerTypes = [...new Set(expandedData.map(d => d.group_dx))];
 
-            // Assign colors
             colorScale = d3.scaleOrdinal()
                 .domain(cancerTypes)
                 .range(d3.schemeCategory10);
 
-            // Draw dots initially
             updateStep(1);
         });
 
@@ -108,15 +105,16 @@
             d3.selectAll(".nav-button").classed("active", false);
             d3.select(".nav-bar").selectAll("button").nodes()[step - 1].classList.add("active");
 
-            // Update explanatory text
             if (step === 1) {
-                storyText.text("This visualization shows all cancer diagnoses. Each dot represents one diagnosis.");
+                storyText.text("This visualization shows cancer diagnoses from the Seoul National University Hospital. Each dot represents a diagnosis.");
             } else if (step === 2) {
-                storyText.text("Breast cancer is one of the most publicized cancers, but how does it compare in numbers?");
+                storyText.text("Breast cancer is one of the most publicized cancers. Let's highlight its cases.");
             } else if (step === 3) {
-                storyText.text("Colorectal, gastric, and lung cancer have high case numbers but receive less media attention.");
+                storyText.text("Colorectal, gastric, and lung cancer make up 74% of diagnoses, but generally receive less media attention compared to breast cancer.");
             } else if (step === 4) {
-                storyText.text("Comparing all cancers side by side gives us a clearer perspective on overall cases.");
+                storyText.text("Lung cancer and colorectal cancer are frequently discussed in research circles due to their high mortality rates, but they may not have the same funding as breast cancer research.");
+            } else if (step === 5) {
+                storyText.text("All types of cancer, regardless of their prevalence in the media, deserve equal focus in both research and awareness.");
             }
 
             let totalRows = Math.ceil(expandedData.length / maxDotsPerRow);
@@ -130,7 +128,7 @@
                 .attr("cx", (d, i) => margin.left + (i % maxDotsPerRow) * (dotSize + spacing))
                 .attr("cy", (d, i) => margin.top + Math.floor(i / maxDotsPerRow) * rowSpacing)
                 .attr("r", dotSize / 2)
-                .attr("fill", d => colorScale(d.group_dx))
+                .attr("fill", "gray")
                 .style("opacity", 1)
                 .on("mouseover", function(event, d) {
                     d3.select(this).attr("r", dotSize / 1.5);
@@ -146,11 +144,13 @@
                 .merge(dots)
                 .transition().duration(500)
                 .attr("fill", d => {
+                    if (step === 1) return "gray";
                     if (step === 2) return d.group_dx === "breast cancer" ? colorScale(d.group_dx) : "gray";
                     if (step === 3) return ["colorectal cancer", "gastric cancer", "lung cancer"].includes(d.group_dx) ? colorScale(d.group_dx) : "gray";
+                    if (step === 4) return ["lung cancer", "colorectal cancer"].includes(d.group_dx) ? colorScale(d.group_dx) : "gray";
                     return colorScale(d.group_dx);
                 })
-                .style("opacity", step === 4 ? 0.5 : 1);
+                .style("opacity", step === 5 ? 0.5 : 1);
 
             dots.exit().remove();
         }
